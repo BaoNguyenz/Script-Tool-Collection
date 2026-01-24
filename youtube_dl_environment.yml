@@ -1,0 +1,10 @@
+name: youtube_dl
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - ffmpeg  # Required for audio/video processing
+  - pip:
+    - yt-dlp  # YouTube downloader

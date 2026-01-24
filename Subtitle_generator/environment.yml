@@ -1,0 +1,20 @@
+name: subtitle_generator
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch::pytorch
+  - pytorch::torchaudio
+  - pytorch::pytorch-cuda=12.1
+  - conda-forge::ffmpeg
+  - pip
+  - pip:
+    - stable-ts
+    - transformers==4.35.2
+    - sentencepiece
+    - protobuf
+    - srt
+    - requests
