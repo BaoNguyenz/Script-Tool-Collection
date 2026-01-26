@@ -6,7 +6,7 @@ A collection of 4 powerful Python tools for media processing and content creatio
 
 | Tool | Purpose | Environment | Key Features |
 |------|---------|-------------|--------------|
-| [**YouTube Downloader**](#-youtube-downloader) | Download audio/video with CLI or GUI | `youtube_dl` | MP3/FLAC/1080p/720p, GUI + CLI |
+| [**YouTube Downloader GUI**](#-youtube-downloader-gui) | Download audio/video with modern GUI | `youtube_dl` | MP3/FLAC/1080p/720p, Real-time progress |
 | [**Remove Background**](#-remove-background-images) | AI background removal | `rembg_tool` | GPU accelerated, Batch processing |
 | [**Subtitle Generator**](#-subtitle-generator) | Generate & translate subtitles | `subtitle_generator` | EN transcription, VI translation |
 
@@ -21,11 +21,11 @@ A collection of 4 powerful Python tools for media processing and content creatio
 
 ### Installation
 
-#### 1. YouTube Downloader (Audio + Video + GUI)
+#### 1. YouTube Downloader GUI
 
 ```powershell
-# Navigate to YouTube Downloader
-cd e:\Script\YouTube_Downloader
+# Navigate to YouTube Downloader GUI
+cd e:\Script\Download_youtube_gui
 
 # Create environment
 conda env create -f environment.yml
@@ -33,14 +33,11 @@ conda env create -f environment.yml
 # Activate environment
 conda activate youtube_dl
 
-# Launch GUI (easiest)
-cd gui
+# Launch GUI
 python youtube_downloader_gui.py
 
-# Or use CLI
-cd cli
-python download_audio.py "YOUTUBE_URL" --format mp3 --quality 320
-python download_video.py "YOUTUBE_URL" --quality 1080p
+# Or double-click launcher
+Launch_YouTube_Downloader.bat
 ```
 
 #### 2. Remove Background Tool
@@ -74,38 +71,43 @@ python translate_vi_qwen.py   # Translate to Vietnamese
 
 ## 📖 Detailed Documentation
 
-### 🎬 YouTube Downloader
+### 🖥️ YouTube Downloader GUI
 
-**Location**: `YouTube_Downloader/`  
+**Location**: `Download_youtube_gui/`  
 **Environment**: `youtube_dl`
 
 **Features**:
-- **🎵 Audio**: MP3, FLAC, WAV, ALAC, OPUS, M4A (up to 320kbps)
-- **🎬 Video**: MP4 (best, 1080p, 720p, 480p, 360p)
-- **🖥️ GUI**: Modern dark mode interface with real-time progress
-- **⌨️ CLI**: Command-line for batch downloads and automation
-- **📦 Batch**: Download multiple files from text file
+- **🎵 Audio Mode**: MP3, FLAC, WAV, M4A, OPUS (up to 320kbps)
+- **🎬 Video Mode**: MP4 (best, 1080p, 720p, 480p, 360p)
+- **🎨 Modern UI**: Dark mode interface with CustomTkinter
+- **📊 Real-time Progress**: Visual progress bar with speed/ETA
+- **🖱️ Easy to Use**: No command line needed, point and click
+- **⚙️ Quality Selection**: Dropdown menus for format and quality
 
 **Quick Start**:
 
 ```powershell
 # Setup (one-time)
-cd YouTube_Downloader
+cd Download_youtube_gui
 conda env create -f environment.yml
 conda activate youtube_dl
 
-# Launch GUI (recommended for beginners)
-cd gui
+# Launch GUI
 python youtube_downloader_gui.py
 
-# Or use CLI (advanced users)
-cd cli
-python download_audio.py "URL" --format mp3 --quality 320
-python download_video.py "URL" --quality 1080p
-python download_audio.py --batch urls.txt
+# Or double-click
+Launch_YouTube_Downloader.bat
 ```
 
-📄 **Full Guide**: [YouTube_Downloader/README.md](YouTube_Downloader/README.md)
+**How to Use**:
+1. Select mode: 🎵 Audio or 🎬 Video
+2. Paste YouTube URL
+3. Choose format and quality from dropdowns
+4. Select output directory
+5. Click Download button
+6. Watch real-time progress
+
+📄 **Full Guide**: [Download_youtube_gui/README_GUI.md](Download_youtube_gui/README_GUI.md)
 
 ---
 
@@ -172,7 +174,7 @@ python translate_vi.py         # Fast (basic quality)
 
 | Environment | Tools | Dependencies | GPU Required |
 |-------------|-------|--------------|--------------|
-| `youtube_dl` | YouTube Downloader (CLI + GUI) | yt-dlp, ffmpeg, customtkinter | ❌ No |
+| `youtube_dl` | YouTube Downloader GUI | yt-dlp, ffmpeg, customtkinter | ❌ No |
 | `rembg_tool` | Remove Background | rembg, CUDA 12.1, cuDNN | ✅ Optional (17x faster) |
 | `subtitle_generator` | Subtitle Generator | PyTorch, stable-ts, CUDA 12.1 | ✅ Recommended |
 
@@ -218,16 +220,11 @@ pip install --upgrade yt-dlp
 e:\Script\
 ├── README.md                          # This file
 │
-├── YouTube_Downloader/
-│   ├── environment.yml               # Environment config
-│   ├── README.md                     # YouTube downloader docs
-│   ├── cli/                          # Command-line tools
-│   │   ├── download_audio.py
-│   │   └── download_video.py
-│   ├── gui/                          # GUI application
-│   │   └── youtube_downloader_gui.py
-│   ├── output_audio/                 # Audio downloads
-│   └── output_video/                 # Video downloads
+├── Download_youtube_gui/
+│   ├── environment.yml               # Conda environment
+│   ├── README_GUI.md                 # GUI documentation
+│   ├── youtube_downloader_gui.py    # Main GUI application
+│   └── Launch_YouTube_Downloader.bat # Quick launcher
 │
 ├── Remove_background_images/
 │   ├── environment.yml

@@ -29,10 +29,10 @@ Modern, user-friendly graphical interface for downloading YouTube videos and aud
 
 ```powershell
 # Navigate to Script directory
-cd e:\Script
+cd Download_youtube_gui
 
 # Update environment (adds GUI dependencies)
-conda env update -n youtube_dl -f youtube_dl_environment.yml --prune
+conda env create -f environment.yml
 
 # Activate environment
 conda activate youtube_dl
