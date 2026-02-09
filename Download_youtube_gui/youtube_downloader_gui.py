@@ -9,6 +9,18 @@ import threading
 from pathlib import Path
 from yt_dlp import YoutubeDL
 import sys
+import os
+
+
+def get_ffmpeg_path():
+    """Get FFmpeg path - works for both source and bundled .exe"""
+    if getattr(sys, 'frozen', False):
+        # Running as bundled .exe
+        base_path = Path(sys._MEIPASS)
+        ffmpeg_dir = base_path / 'ffmpeg'
+        if ffmpeg_dir.exists():
+            return str(ffmpeg_dir)
+    return None  # Use system PATH
 
 # Set appearance
 ctk.set_appearance_mode("dark")
@@ -290,6 +302,11 @@ class YouTubeDownloaderGUI:
             'progress_hooks': [self.progress_hook],
         }
         
+        # Add FFmpeg path if bundled
+        ffmpeg_path = get_ffmpeg_path()
+        if ffmpeg_path:
+            ydl_opts['ffmpeg_location'] = ffmpeg_path
+        
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             title = info.get('title', 'Unknown')
@@ -324,6 +341,11 @@ class YouTubeDownloaderGUI:
             'merge_output_format': 'mp4',
             'progress_hooks': [self.progress_hook],
         }
+        
+        # Add FFmpeg path if bundled
+        ffmpeg_path = get_ffmpeg_path()
+        if ffmpeg_path:
+            ydl_opts['ffmpeg_location'] = ffmpeg_path
         
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
