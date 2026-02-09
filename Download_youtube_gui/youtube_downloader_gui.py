@@ -10,6 +10,7 @@ from pathlib import Path
 from yt_dlp import YoutubeDL
 import sys
 import os
+import re
 
 
 def get_ffmpeg_path():
@@ -21,6 +22,24 @@ def get_ffmpeg_path():
         if ffmpeg_dir.exists():
             return str(ffmpeg_dir)
     return None  # Use system PATH
+
+
+def is_valid_youtube_url(url):
+    """Check if URL is a valid YouTube URL (supports all formats)"""
+    youtube_patterns = [
+        r'(https?://)?(www\.)?youtube\.com/watch\?v=',
+        r'(https?://)?(www\.)?youtube\.com/shorts/',
+        r'(https?://)?(www\.)?youtube\.com/embed/',
+        r'(https?://)?(www\.)?youtube\.com/live/',
+        r'(https?://)?(www\.)?youtube\.com/v/',
+        r'(https?://)?youtu\.be/',
+        r'(https?://)?(www\.)?music\.youtube\.com/watch\?v=',
+        r'(https?://)?(m\.)?youtube\.com/watch\?v=',
+    ]
+    for pattern in youtube_patterns:
+        if re.search(pattern, url):
+            return True
+    return False
 
 # Set appearance
 ctk.set_appearance_mode("dark")
@@ -38,6 +57,8 @@ class YouTubeDownloaderGUI:
         self.download_mode = "audio"  # audio or video
         self.output_path = str(Path.home() / "Downloads")
         self.is_downloading = False
+        self.cancel_download = False  # Flag to cancel download
+        self.current_ydl = None  # Reference to current YoutubeDL instance
         
         self.setup_ui()
         
@@ -154,9 +175,13 @@ class YouTubeDownloaderGUI:
         )
         browse_btn.pack(side="left")
         
+        # Buttons frame (Download + Cancel)
+        buttons_frame = ctk.CTkFrame(self.window, fg_color="transparent")
+        buttons_frame.pack(pady=15, padx=40, fill="x")
+        
         # Download button
         self.download_btn = ctk.CTkButton(
-            self.window,
+            buttons_frame,
             text="⬇ Download",
             height=45,
             font=("Roboto", 16, "bold"),
@@ -164,7 +189,20 @@ class YouTubeDownloaderGUI:
             fg_color="#2563eb",
             hover_color="#1d4ed8"
         )
-        self.download_btn.pack(pady=15, padx=40, fill="x")
+        self.download_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        # Cancel button
+        self.cancel_btn = ctk.CTkButton(
+            buttons_frame,
+            text="✖ Cancel",
+            height=45,
+            font=("Roboto", 16, "bold"),
+            command=self.cancel_current_download,
+            fg_color="#dc2626",
+            hover_color="#b91c1c",
+            state="disabled"
+        )
+        self.cancel_btn.pack(side="left", fill="x", expand=True, padx=(5, 0))
         
         # Progress bar
         self.progress_bar = ctk.CTkProgressBar(self.window, height=20)
@@ -217,6 +255,10 @@ class YouTubeDownloaderGUI:
     
     def progress_hook(self, d):
         """Progress callback for yt-dlp"""
+        # Check for cancel
+        if self.cancel_download:
+            raise Exception("Download cancelled by user")
+        
         if d['status'] == 'downloading':
             try:
                 # Calculate progress percentage
@@ -239,7 +281,8 @@ class YouTubeDownloaderGUI:
                     self.window.title(f"Downloading... {progress*100:.1f}% | {speed_mb:.1f} MB/s | ETA: {eta}s")
                     
             except Exception as e:
-                pass
+                if self.cancel_download:
+                    raise
                 
         elif d['status'] == 'finished':
             self.progress_bar.set(1.0)
@@ -251,14 +294,12 @@ class YouTubeDownloaderGUI:
         
         if not url:
             messagebox.showerror("Error", "Please enter a YouTube URL")
-            self.is_downloading = False
-            self.download_btn.configure(state="normal", text="⬇ Download")
+            self.reset_download_state()
             return
         
-        if 'youtube.com' not in url and 'youtu.be' not in url:
-            messagebox.showerror("Error", "Invalid YouTube URL")
-            self.is_downloading = False
-            self.download_btn.configure(state="normal", text="⬇ Download")
+        if not is_valid_youtube_url(url):
+            messagebox.showerror("Error", "Invalid YouTube URL\n\nSupported formats:\n• youtube.com/watch?v=...\n• youtu.be/...\n• youtube.com/shorts/...\n• music.youtube.com/...")
+            self.reset_download_state()
             return
         
         output_dir = self.output_entry.get()
@@ -276,12 +317,14 @@ class YouTubeDownloaderGUI:
                 self.download_video(url, output_dir)
                 
         except Exception as e:
-            self.log(f"\n❌ Error: {str(e)}")
-            messagebox.showerror("Download Error", str(e))
+            if self.cancel_download:
+                self.log("\n⚠️ Download cancelled by user")
+            else:
+                self.log(f"\n❌ Error: {str(e)}")
+                messagebox.showerror("Download Error", str(e))
         finally:
-            self.is_downloading = False
-            self.download_btn.configure(state="normal", text="⬇ Download")
-            self.progress_bar.set(0)
+            self.reset_download_state()
+            self.cancel_btn.configure(text="✖ Cancel")
     
     def download_audio(self, url, output_dir):
         """Download audio"""
@@ -294,6 +337,7 @@ class YouTubeDownloaderGUI:
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': f'{output_dir}/%(title)s.%(ext)s',
+            'noplaylist': True,  # Download single video only, not playlist
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': format_codec,
@@ -338,7 +382,13 @@ class YouTubeDownloaderGUI:
         ydl_opts = {
             'format': video_format,
             'outtmpl': f'{output_dir}/%(title)s.%(ext)s',
+            'noplaylist': True,  # Download single video only, not playlist
             'merge_output_format': 'mp4',
+            'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4',
+            }],
+            'prefer_ffmpeg': True,
             'progress_hooks': [self.progress_hook],
         }
         
@@ -366,11 +416,37 @@ class YouTubeDownloaderGUI:
             return
         
         self.is_downloading = True
+        self.cancel_download = False
         self.download_btn.configure(state="disabled", text="⏳ Downloading...")
+        self.cancel_btn.configure(state="normal")
         
         # Run download in thread to prevent UI freeze
         thread = threading.Thread(target=self.download_worker, daemon=True)
         thread.start()
+    
+    def reset_download_state(self):
+        """Reset UI state after download completes or is cancelled"""
+        self.is_downloading = False
+        self.cancel_download = False
+        self.current_ydl = None
+        self.download_btn.configure(state="normal", text="⬇ Download")
+        self.cancel_btn.configure(state="disabled")
+        self.progress_bar.set(0)
+        self.window.title("YouTube Downloader")
+    
+    def cancel_current_download(self):
+        """Cancel the current download"""
+        if self.is_downloading:
+            self.cancel_download = True
+            self.log("\n⚠️ Cancelling download...")
+            self.cancel_btn.configure(state="disabled", text="Cancelling...")
+            
+            # Try to abort the YoutubeDL instance
+            if self.current_ydl:
+                try:
+                    self.current_ydl.params['abort'] = True
+                except:
+                    pass
     
     def run(self):
         """Run the application"""
