@@ -80,6 +80,17 @@ def build_exe():
     # Add CustomTkinter assets
     add_data.append(f'--add-data={ctk_path};customtkinter')
     
+    # Check for custom icon
+    icon_file = script_dir / 'icon.ico'
+    icon_arg = []
+    if icon_file.exists():
+        print(f"[OK] Found custom icon: {icon_file}")
+        icon_arg = [f'--icon={icon_file}']
+        # Also bundle icon.ico as data so the window icon works when running .exe
+        add_data.append(f'--add-data={icon_file};.')
+    else:
+        print("[INFO] No custom icon found (place 'icon.ico' in project folder to use)")
+    
     # PyInstaller command
     cmd = [
         'pyinstaller',
@@ -88,6 +99,7 @@ def build_exe():
         '--name=YouTubeDownloader',
         '--clean',
         '--noconfirm',
+        *icon_arg,
         *add_data,
         str(main_script)
     ]
