@@ -6,6 +6,9 @@ Translate English subtitles to Vietnamese using NLLB
 """
 
 import sys
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+
 from pathlib import Path
 from subtitle_utils import get_nllb_translator, translate_subtitle_nllb_cached
 
