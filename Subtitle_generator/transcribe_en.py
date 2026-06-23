@@ -131,9 +131,17 @@ def transcribe_file(model, input_file: Path) -> Tuple[bool, float, Path]:
             compression_ratio_threshold=2.2,
             logprob_threshold=-0.8,
             
-            # Regroup for better segments
-            regroup=True,
+            # Tắt tự động regroup để tự xử lý định dạng tối ưu hơn cho học tiếng Anh
+            regroup=False,
         )
+        
+        # Gom cụm phụ đề thủ công:
+        # 1. Gộp các từ ở gần nhau (gap <= 0.5s) thành các cụm dài tối đa 12 từ
+        result.merge_by_gap(0.5, max_words=12)
+        # 2. Chỉ tách câu ở dấu chấm, dấu hỏi, dấu chấm than (. ? !) và giữ nguyên khi gặp dấu phẩy
+        result.split_by_punctuation(['.', '?', '!'])
+        # 3. Gộp các câu ngắn đứng sát nhau (gap <= 0.3s) thành dòng phụ đề hoàn chỉnh
+        result.merge_by_gap(0.3, max_words=15)
         
         # STEP 2: Refine timestamps
         print("[STEP 2/3] Refining timestamps...")
@@ -153,9 +161,9 @@ def transcribe_file(model, input_file: Path) -> Tuple[bool, float, Path]:
             word_level=False
         )
         
-        # STEP 3: Adjust timing for continuous display
-        print(f"[STEP 3/3] Adjusting timing (gap={TIMING_GAP_MS}ms)...")
-        adjust_continuous_timing(str(en_output), gap_ms=TIMING_GAP_MS)
+        # STEP 3: Adjust timing for continuous display (chỉ nối phụ đề nếu khoảng lặng dưới 2 giây)
+        print(f"[STEP 3/3] Adjusting timing (gap={TIMING_GAP_MS}ms, max_gap=2000ms)...")
+        adjust_continuous_timing(str(en_output), gap_ms=TIMING_GAP_MS, max_gap_ms=2000)
         
         duration = time.time() - start_time
         print(f"[OUTPUT] {en_output.name}")

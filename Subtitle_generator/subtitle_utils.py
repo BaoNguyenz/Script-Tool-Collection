@@ -13,18 +13,19 @@ from typing import List, Optional
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 
-def adjust_continuous_timing(srt_path: str, gap_ms: int = 10) -> None:
+def adjust_continuous_timing(srt_path: str, gap_ms: int = 10, max_gap_ms: int = 2000) -> None:
     """
     Điều chỉnh timing để subtitle nối đuôi nhau (loại bỏ gaps).
     
     Args:
         srt_path: Đường dẫn file .srt
         gap_ms: Khoảng cách tối thiểu giữa subtitles (milliseconds)
+        max_gap_ms: Khoảng nghỉ tối đa để nối phụ đề (nếu lớn hơn, giữ nguyên mốc cũ để phụ đề ẩn đi)
     
     Logic:
-        - Với mỗi subtitle i, kéo end_time ra đến start_time của subtitle i+1
-        - Trừ đi gap_ms để tránh chồng lấn
-        - Subtitle cuối cùng giữ nguyên
+        - Với mỗi subtitle i, kiểm tra khoảng nghỉ đến subtitle i+1.
+        - Nếu khoảng nghỉ <= max_gap_ms, kéo end_time ra đến start_time của subtitle i+1 trừ đi gap_ms.
+        - Subtitle cuối cùng giữ nguyên.
     """
     # Read SRT file
     with open(srt_path, 'r', encoding='utf-8') as f:
@@ -35,19 +36,22 @@ def adjust_continuous_timing(srt_path: str, gap_ms: int = 10) -> None:
     
     # Adjust timing
     gap_delta = timedelta(milliseconds=gap_ms)
+    max_gap_delta = timedelta(milliseconds=max_gap_ms)
     
     for i in range(len(subtitles) - 1):
         current = subtitles[i]
         next_sub = subtitles[i + 1]
         
-        # Calculate new end time: next subtitle start - gap
-        new_end = next_sub.start - gap_delta
-        
-        # Only adjust if:
-        # 1. New end time is after current end (extending, not shortening)
-        # 2. New end time is before next start (no overlap)
-        if new_end > current.end and new_end < next_sub.start:
-            current.end = new_end
+        # Chỉ nối nếu khoảng cách nghỉ (silence gap) nhỏ hơn hoặc bằng max_gap_ms
+        actual_gap = next_sub.start - current.end
+        if actual_gap <= max_gap_delta:
+            new_end = next_sub.start - gap_delta
+            
+            # Only adjust if:
+            # 1. New end time is after current end (extending, not shortening)
+            # 2. New end time is before next start (no overlap)
+            if new_end > current.end and new_end < next_sub.start:
+                current.end = new_end
     
     # Write back to file
     with open(srt_path, 'w', encoding='utf-8') as f:
