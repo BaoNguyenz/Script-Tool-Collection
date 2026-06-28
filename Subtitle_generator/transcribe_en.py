@@ -119,7 +119,7 @@ def transcribe_file(model, input_file: Path) -> Tuple[bool, float, Path]:
             temperature=0.0,
             
             # Context awareness
-            condition_on_previous_text=True,
+            condition_on_previous_text=False,
             patience=1.5,
             
             # VAD (Voice Activity Detection)
